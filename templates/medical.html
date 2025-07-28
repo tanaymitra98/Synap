@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Document Parser</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='page-styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .upload-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+
+        
+        
+        .upload-box:hover {
+            border-color: #4a90e2;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .upload-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 1rem 0;
+        }
+        
+        .upload-label:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            margin: 1rem 0;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        .analyze-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .analyze-btn:hover {
+            background: #3e8e41;
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+            margin: 2rem 0;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4a90e2;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-container {
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: left;
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .result-container h2 {
+            color: #4a90e2;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .result-content {
+            line-height: 1.6;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #4CAF50;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Spline Background -->
+    <div class="spline-container">
+        <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.42/build/spline-viewer.js"></script>
+        <spline-viewer url="https://prod.spline.design/egntmxqsbGp7IhZY/scene.splinecode"></spline-viewer>
+    </div>
+    
+    <!-- Main Content Container -->
+    <div class="main-container">
+        <!-- Left Column - Analysis Results -->
+        <div class="results-column">
+            <div class="result-container" id="resultContainer">
+                <div class="result-header">
+                    <h2><i class="fas fa-file-medical-alt"></i> Medical Document Analysis</h2>
+                    <div class="result-actions">
+                        <button class="copy-btn" id="copyBtn" title="Copy to clipboard">
+                            <i class="far fa-copy"></i> Copy
+                        </button>
+                        <button class="download-btn" id="downloadBtn" title="Download as text">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="result-content" id="resultContent">
+                    <div class="analysis-placeholder">
+                        <i class="fas fa-microscope"></i>
+                        <h3>Document Analysis Results Will Appear Here</h3>
+                        <p>Upload and analyze a medical document to see detailed information.</p>
+                    </div>
+                </div>
+                
+                <div class="result-footer">
+                    <div class="analysis-meta">
+                        <span id="analysisDate"></span>
+                        <span id="analysisTime"></span>
+                        <span id="analysisLength"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Upload Section -->
+        <div class="upload-column">
+            <h1 class="header">Medical Document</h1>
+            <p class="under-header">Upload Medical Document</p>
+            <p class="under-under-header">Get detailed analysis and extract key medical information</p>
+            
+            <div class="upload-container">
+            <div class="upload-box">
+                <div class="upload-header">
+                    <i class="fas fa-file-medical"></i>
+                    <h3>Upload Medical Document</h3>
+                    <p>Supported formats: PDF, DOC, DOCX, TXT (Max 16MB)</p>
+                </div>
+                
+                <div class="upload-area" id="dropZone">
+                    <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" />
+                    <label for="fileInput" class="upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Drag & drop your file here or click to browse</span>
+                    </label>
+                    
+                    <div class="file-info" id="fileInfo">
+                        <i class="fas fa-file-alt"></i>
+                        <span>No file selected</span>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="analyze-btn" id="analyzeBtn" disabled>
+                        <i class="fas fa-search"></i> Analyze Document
+                    </button>
+                    <button class="clear-btn" id="clearBtn">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+                
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p>Analyzing document. This may take a moment...</p>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <p class="status-text" id="statusText">Processing your document...</p>
+                </div>
+                
+                <div class="messages">
+                    <div class="error-message" id="errorMessage"></div>
+                    <div class="success-message" id="successMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Developed by Quad.coders</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const fileInput = document.getElementById('fileInput');
+            const dropZone = document.getElementById('dropZone');
+            const fileInfo = document.getElementById('fileInfo');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const progressBar = document.getElementById('progressBar');
+            const statusText = document.getElementById('statusText');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultContent = document.getElementById('resultContent');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const analysisDate = document.getElementById('analysisDate');
+            const analysisTime = document.getElementById('analysisTime');
+            const analysisLength = document.getElementById('analysisLength');
+            
+            let selectedFile = null;
+            let analysisResult = '';
+            
+            // Initialize the application
+            function init() {
+                setupEventListeners();
+                updateUI();
+            }
+            
+            // Set up all event listeners
+            function setupEventListeners() {
+                // File input change
+                fileInput.addEventListener('change', handleFileSelect);
+                
+                // Drag and drop events
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+                
+                dropZone.addEventListener('drop', handleDrop, false);
+                
+                // Button clicks
+                analyzeBtn.addEventListener('click', handleAnalyzeClick);
+                clearBtn.addEventListener('click', handleClearClick);
+                copyBtn.addEventListener('click', handleCopyClick);
+                downloadBtn.addEventListener('click', handleDownloadClick);
+            }
+            
+            // Prevent default drag and drop behavior
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            // Highlight drop zone when dragging over
+            function highlight() {
+                dropZone.classList.add('highlight');
+            }
+            
+            // Remove highlight when leaving drop zone
+            function unhighlight() {
+                dropZone.classList.remove('highlight');
+            }
+            
+            // Handle file drop
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect({ target: fileInput });
+                }
+            }
+            
+            // Handle file selection
+            function handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    updateFileInfo();
+                    showSuccess('File selected. Click "Analyze Document" to proceed.');
+                } else {
+                    selectedFile = null;
+                    updateFileInfo();
+                }
+                updateUI();
+            }
+            
+            // Update file information display
+            function updateFileInfo() {
+                if (selectedFile) {
+                    fileInfo.innerHTML = `
+                        <i class="fas fa-file-alt"></i>
+                        <span>
+                            <strong>${selectedFile.name}</strong><br>
+                            <small>${formatFileSize(selectedFile.size)} • ${selectedFile.type || 'Unknown type'}</small>
+                        </span>
+                    `;
+                } else {
+                    fileInfo.innerHTML = `
+                        <i class="fas fa-file-alt"></i>
+                        <span>No file selected</span>
+                    `;
+                }
+            }
+            
+            // Handle analyze button click
+            function handleAnalyzeClick() {
+                if (!selectedFile) {
+                    showError('Please select a file first');
+                    return;
+                }
+                
+                analyzeDocument(selectedFile);
+            }
+            
+            // Handle clear button click
+            function handleClearClick() {
+                fileInput.value = '';
+                selectedFile = null;
+                analysisResult = '';
+                updateFileInfo();
+                updateUI();
+                hideMessages();
+                resultContainer.style.display = 'none';
+            }
+            
+            // Handle copy button click
+            function handleCopyClick() {
+                if (!analysisResult) return;
+                
+                navigator.clipboard.writeText(analysisResult)
+                    .then(() => {
+                        const originalText = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        showError('Failed to copy to clipboard');
+                    });
+            }
+            
+            // Handle download button click
+            function handleDownloadClick() {
+                if (!analysisResult) return;
+                
+                const blob = new Blob([analysisResult], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const fileName = selectedFile ? 
+                    `analysis_${selectedFile.name.split('.').slice(0, -1).join('.')}.txt` : 
+                    'medical_analysis.txt';
+                
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // Function to analyze document
+            async function analyzeDocument(file) {
+                const formData = new FormData();
+                formData.append('document', file);
+                
+                // Show loading state
+                setLoadingState(true);
+                updateProgress(0, 'Preparing document...');
+                
+                try {
+                    // Simulate progress (since we can't track actual upload progress with fetch)
+                    const progressInterval = simulateProgress();
+                    
+                    // Make the API request
+                    const response = await fetch('/api/analyze/medical', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    // Clear the progress interval
+                    clearInterval(progressInterval);
+                    updateProgress(100, 'Processing results...');
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Store the raw analysis result
+                        analysisResult = data.analysis;
+                        
+                        // Format and display the analysis
+                        const formattedAnalysis = formatAnalysis(analysisResult);
+                        resultContent.innerHTML = formattedAnalysis;
+                        resultContainer.style.display = 'block';
+                        
+                        // Update UI and show success message
+                        updateUI();
+                        showSuccess('Document analyzed successfully!');
+                        updateAnalysisMetadata();
+                        
+                        // Ensure the analysis is visible
+                        resultContainer.scrollTop = 0;
+                    } else {
+                        throw new Error(data.error || 'Failed to analyze document');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError(error.message || 'An error occurred while processing your request');
+                } finally {
+                    setLoadingState(false);
+                }
+            }
+            
+            // Simulate progress for better UX
+            function simulateProgress() {
+                let progress = 0;
+                
+                const interval = setInterval(() => {
+                    if (progress < 90) {
+                        progress += Math.random() * 10;
+                        updateProgress(progress, 'Analyzing document...');
+                    }
+                }, 500);
+                
+                return interval;
+            }
+            
+            // Update progress bar and status text
+            function updateProgress(percent, message) {
+                progressBar.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+                if (message) {
+                    statusText.textContent = message;
+                }
+            }
+            
+            // Set loading state
+            function setLoadingState(isLoading) {
+                if (isLoading) {
+                    loadingIndicator.style.display = 'flex';
+                    analyzeBtn.disabled = true;
+                    clearBtn.disabled = true;
+                    fileInput.disabled = true;
+                    dropZone.style.opacity = '0.7';
+                    dropZone.style.pointerEvents = 'none';
+                } else {
+                    loadingIndicator.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    clearBtn.disabled = false;
+                    fileInput.disabled = false;
+                    dropZone.style.opacity = '1';
+                    dropZone.style.pointerEvents = 'auto';
+                    updateProgress(0, '');
+                }
+                
+                updateUI();
+            }
+            
+            // Format the analysis response with proper HTML
+            function formatAnalysis(text) {
+                if (!text) return '<div class="error">No analysis results available.</div>';
+                
+                // Split the text into sections
+                const sections = text.split(/\n\s*\n/);
+                let html = '<div class="analysis-content">';
+                
+                // Process each section
+                sections.forEach(section => {
+                    section = section.trim();
+                    if (!section) return;
+                    
+                    // Check for Q&A sections
+                    const qaMatch = section.match(/^(Q\d+):\s*(.*?)\s*(A\d+:.*)$/s);
+                    if (qaMatch) {
+                        const [, qNum, question, answer] = qaMatch;
+                        html += `
+                            <div class="qa-section">
+                                <div class="question">${question}</div>
+                                <div class="answer">${formatMarkdown(answer.replace(/^A\d+:\s*/, ''))}</div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Check for summary section
+                    if (section.toLowerCase().startsWith('summary:')) {
+                        const summary = section.substring(8).trim();
+                        html += `
+                            <div class="summary-section">
+                                <h3><i class="fas fa-file-medical"></i> Summary</h3>
+                                <div class="summary-content">${formatMarkdown(summary)}</div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Check for recommendations section
+                    if (section.toLowerCase().includes('key recommendations:')) {
+                        const recommendations = section.substring(section.indexOf(':') + 1).trim();
+                        html += `
+                            <div class="recommendations">
+                                <h3><i class="fas fa-lightbulb"></i> Key Recommendations</h3>
+                                ${formatMarkdown(recommendations)}
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Default formatting for other sections
+                    html += `<div class="section">${formatMarkdown(section)}</div>`;
+                });
+                
+                html += '</div>';
+                return html;
+            }
+            
+            // Format markdown text to HTML
+            function formatMarkdown(text) {
+                if (!text) return '';
+                
+                // Convert markdown to HTML using marked.js
+                try {
+                    return marked.parse(text);
+                } catch (e) {
+                    console.error('Error parsing markdown:', e);
+                    return text.replace(/\n/g, '<br>');
+                }
+            }
+            
+            // Update analysis metadata
+            function updateAnalysisMetadata() {
+                const now = new Date();
+                
+                // Format date (e.g., "July 28, 2023")
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                analysisDate.textContent = now.toLocaleDateString(undefined, options);
+                
+                // Format time (e.g., "2:30 PM")
+                analysisTime.textContent = now.toLocaleTimeString(undefined, { 
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                });
+                
+                // Calculate analysis length (word count)
+                if (analysisResult) {
+                    const wordCount = analysisResult.trim().split(/\s+/).length;
+                    analysisLength.textContent = `${wordCount} words`;
+                } else {
+                    analysisLength.textContent = '';
+                }
+            }
+            
+            // Update UI based on current state
+            function updateUI() {
+                // Update analyze button state
+                analyzeBtn.disabled = !selectedFile;
+                
+                // Update clear button state
+                clearBtn.disabled = !selectedFile;
+                
+                // Update copy/download buttons
+                const hasResults = !!analysisResult;
+                copyBtn.disabled = !hasResults;
+                downloadBtn.disabled = !hasResults;
+            }
+            
+            // Helper functions
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            function showError(message) {
+                errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+                errorMessage.style.display = 'flex';
+                successMessage.style.display = 'none';
+                
+                // Auto-hide error after 5 seconds
+                setTimeout(() => {
+                    if (errorMessage.textContent.includes(message)) {
+                        errorMessage.style.display = 'none';
+                    }
+                }, 5000);
+            }
+            
+            function showSuccess(message) {
+                successMessage.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+                successMessage.style.display = 'flex';
+                errorMessage.style.display = 'none';
+                
+                // Auto-hide success after 3 seconds
+                setTimeout(() => {
+                    if (successMessage.textContent.includes(message)) {
+                        successMessage.style.display = 'none';
+                    }
+                }, 3000);
+            }
+            
+            function hideMessages() {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+            }
+            
+            // Initialize the application
+            init();
+        });
+    </script>
+    
+    <style>
+        /* Main Container */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 100px);
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        /* Left Column - Analysis Results */
+        .results-column {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            max-height: calc(100vh - 140px);
+            position: sticky;
+            top: 20px;
+        }
+        
+        .result-container {
+            background: rgba(15, 15, 26, 0.9);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Right Column - Upload Section */
+        .upload-column {
+            flex: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Upload Container */
+        .upload-container {
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+        
+        /* Upload Box */
+        .upload-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 2px dashed rgba(74, 144, 226, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .upload-box:hover {
+            border-color: #4a90e2;
+            transform: translateY(-2px);
+        }
+        
+        .upload-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .upload-header i {
+            font-size: 2.5rem;
+            color: #4a90e2;
+            margin-bottom: 15px;
+        }
+        
+        .upload-header h3 {
+            margin: 10px 0 5px;
+            color: #fff;
+        }
+        
+        .upload-header p {
+            color: #a0a0a0;
+            margin: 0;
+        }
+        
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed rgba(74, 144, 226, 0.5);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-area.highlight {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: #4a90e2;
+        }
+        
+        .upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #a0a0a0;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .upload-label i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #4a90e2;
+        }
+        
+        .upload-label:hover {
+            color: #fff;
+        }
+        
+        /* File Info */
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-info i {
+            color: #4a90e2;
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .analyze-btn, .clear-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .analyze-btn {
+            background: #4a90e2;
+            color: white;
+        }
+        
+        .analyze-btn:hover:not(:disabled) {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        
+        .analyze-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .clear-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #a0a0a0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .clear-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Loading Indicator */
+        .loading {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #4a90e2;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .progress-container {
+            width: 100%;
+            max-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #4a90e2;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .status-text {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        
+        /* Messages */
+        .messages {
+            margin-top: 20px;
+            min-height: 24px;
+        }
+        
+        .error-message, .success-message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .error-message {
+            background: rgba(255, 88, 88, 0.15);
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .success-message {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+            border-left: 4px solid #2ed573;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Result Container */
+        .result-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 15px;
+            padding: 0;
+            margin-top: 30px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .result-header {
+            padding: 20px 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result-header i {
+            color: #4a90e2;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .copy-btn, .download-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a0a0a0;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-btn:hover, .download-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+        
+        .result-content {
+            padding: 25px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .analysis-placeholder {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .analysis-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: rgba(74, 144, 226, 0.3);
+        }
+        
+        .analysis-placeholder h3 {
+            color: #888;
+            margin: 15px 0 10px;
+        }
+        
+        .analysis-placeholder p {
+            margin: 0;
+            color: #555;
+        }
+        
+        .result-footer {
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .analysis-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        /* Q&A Styling */
+        .qa-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .qa-section {
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 20px;
+        }
+        
+        .qa-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .question {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4a90e2;
+            margin: 25px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .question:before {
+            content: 'Q';
+            background: rgba(74, 144, 226, 0.2);
+            color: #4a90e2;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .answer {
+            margin: 15px 0 25px 0;
+            line-height: 1.7;
+            color: #d0d0d0;
+            padding-left: 34px;
+        }
+        
+        .answer p {
+            margin: 10px 0;
+        }
+        
+        .answer ul, .answer ol {
+            margin: 10px 0 10px 20px;
+            padding-left: 15px;
+        }
+        
+        .answer li {
+            margin-bottom: 8px;
+        }
+        
+        .answer strong {
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .answer em {
+            color: #a0a0a0;
+            font-style: italic;
+        }
+        
+        .answer a {
+            color: #4a90e2;
+            text-decoration: none;
+        }
+        
+        .answer a:hover {
+            text-decoration: underline;
+        }
+        
+        .summary-section {
+            margin: 40px 0 20px;
+            padding: 20px;
+            background: rgba(74, 144, 226, 0.08);
+            border-radius: 10px;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        .summary-section h3 {
+            margin: 0 0 15px 0;
+            color: #4a90e2;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .summary-section h3:before {
+            content: '\f15c';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+        
+        .summary-content {
+            line-height: 1.7;
+        }
+        
+        .recommendations {
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(46, 213, 115, 0.08);
+            border-radius: 10px;
+            border-left: 4px solid #2ed573;
+        }
+        
+        .recommendations h3 {
+            margin: 0 0 15px 0;
+            color: #2ed573;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .recommendations h3:before {
+            content: '\f0a3';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+        }
+        
+        .recommendations ul {
+            margin: 0;
+            padding-left: 25px;
+        }
+        
+        .recommendations li {
+            margin-bottom: 8px;
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .recommendations li:before {
+            content: '•';
+            color: #2ed573;
+            font-size: 1.5rem;
+            position: absolute;
+            left: -5px;
+            top: -5px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .upload-container {
+                padding: 15px;
+            }
+            
+            .upload-box {
+                padding: 20px 15px;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .result-actions {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .action-buttons button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+    
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>

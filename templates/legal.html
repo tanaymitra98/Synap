@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Document </title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='page-styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .upload-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            max-width: 800px;
+            margin: 2rem auto;
+        }
+        
+        .upload-box:hover {
+            border-color: #4a90e2;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .upload-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4a90e2;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 1rem 0;
+        }
+        
+        .upload-label:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            margin: 1rem 0;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        .analyze-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .analyze-btn:hover {
+            background: #3e8e41;
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+            margin: 2rem 0;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4a90e2;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-container {
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: left;
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .result-container h2 {
+            color: #4a90e2;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .result-content {
+            line-height: 1.6;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #4CAF50;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .upload-label:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            margin: 1rem 0;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+        
+        .analyze-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .analyze-btn:hover {
+            background: #3e8e41;
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+            margin: 2rem 0;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #4a90e2;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-container {
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+            text-align: left;
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .result-container h2 {
+            color: #4a90e2;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+            padding-bottom: 0.5rem;
+        }
+        
+        .result-content {
+            line-height: 1.6;
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #4CAF50;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(76, 175, 80, 0.1);
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Spline Background -->
+    <div class="spline-container">
+        <script type="module" src="https://unpkg.com/@splinetool/viewer@1.0.42/build/spline-viewer.js"></script>
+        <spline-viewer url="https://prod.spline.design/sRYTSPogKgF4QGCH/scene.splinecode"></spline-viewer>
+    </div>
+    
+    <!-- Main Content Container -->
+    <div class="container">
+        <h1 class="header">Legal Document</h1>
+        <p class="under-header">Upload Legal Document</p>
+        <p class="under-under-header">Get detailed analysis and identify potential loopholes</p>
+        
+        <div class="upload-box">
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" />
+            <label for="fileInput" class="upload-label">
+                <i class="fas fa-file-upload"></i> Choose Document
+            </label>
+            
+            <div class="file-info" id="fileInfo">No file selected</div>
+            
+            <button class="analyze-btn" id="analyzeBtn">
+                <i class="fas fa-search"></i> Analyze Document
+            </button>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <p>Analyzing document. This may take a moment...</p>
+            </div>
+        </div>
+        
+        <div class="result-container" id="resultContainer">
+            <h2>Document Analysis Results</h2>
+            <div class="result-content" id="resultContent"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Developed by Quad.coders</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultContent = document.getElementById('resultContent');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            let selectedFile = null;
+            
+            // Handle file selection
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    selectedFile = e.target.files[0];
+                    fileInfo.textContent = `Selected: ${selectedFile.name} (${formatFileSize(selectedFile.size)})`;
+                    analyzeBtn.style.display = 'inline-block';
+                    hideMessages();
+                    resultContainer.style.display = 'none';
+                } else {
+                    selectedFile = null;
+                    fileInfo.textContent = 'No file selected';
+                    analyzeBtn.style.display = 'none';
+                }
+            });
+            
+            // Handle analyze button click
+            analyzeBtn.addEventListener('click', function() {
+                if (!selectedFile) {
+                    showError('Please select a file first');
+                    return;
+                }
+                
+                analyzeDocument(selectedFile);
+            });
+            
+            // Function to analyze document
+            async function analyzeDocument(file) {
+                const formData = new FormData();
+                formData.append('document', file);
+                
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                analyzeBtn.disabled = true;
+                hideMessages();
+                
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        // Display results
+                        resultContent.innerHTML = marked.parse(data.analysis);
+                        resultContainer.style.display = 'block';
+                        showSuccess('Document analyzed successfully!');
+                        
+                        // Scroll to results with smooth animation
+                        setTimeout(() => {
+                            // First, scroll to the bottom of the page
+                            window.scrollTo({
+                                top: document.body.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                            
+                            // Then ensure the result container is visible
+                            resultContainer.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'end' 
+                            });
+                        }, 100);
+                    } else {
+                        showError(data.error || 'Failed to analyze document');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('An error occurred while processing your request');
+                } finally {
+                    loadingIndicator.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                }
+            }
+            
+            // Helper functions
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            }
+            
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+            }
+            
+            function hideMessages() {
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+            }
+        });
+    </script>
+    
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>
